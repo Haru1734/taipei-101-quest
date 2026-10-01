@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台中観光ガイド案内</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            color: white;
+            padding: 16px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #0083b0;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+            text-align: center;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .btn {
+            background-color: #ff7e5f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #feb47b;
+        }
+
+        .btn-audio {
+            background-color: #4caf50;
+            margin-bottom: 20px;
+        }
+
+        .btn-audio:hover {
+            background-color: #45a049;
+        }
+
+        /* 測驗區塊與選項樣式 */
+        .quiz-section {
+            border-top: 2px dashed #e0e0e0;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        .quiz-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: #f0f4f8;
+            border: 2px solid #d0d7de;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: #0083b0;
+            background-color: #e6f3f7;
+        }
+
+        /* 按鈕亮起顏色 */
+        .option-btn.btn-correct {
+            background-color: #d4edda !important;
+            border-color: #28a745 !important;
+            color: #155724 !important;
+            font-weight: bold;
+        }
+
+        .option-btn.btn-wrong {
+            background-color: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24 !important;
+        }
+
+        .feedback {
+            margin-top: 12px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            text-align: center;
+            min-height: 24px;
+        }
+
+        .correct { color: #28a745; }
+        .wrong { color: #dc3545; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>台中観光ガイド案内</header>
+
+    <div class="container">
+        <!-- 開始畫面 -->
+        <div id="start-screen" class="card" style="text-align: center;">
+            <h2>台中へようこそ！</h2>
+            <p>台中の人気観光スポットを巡る旅に出かけましょう！解説を聞いて、クイズに答えてね！</p>
+            <button class="btn" onclick="startGame()">はじめる</button>
+        </div>
+
+        <!-- 主頁面（景點 + 測驗在同一頁） -->
+        <div id="main-card" class="card hidden">
+            <h2 id="spot-title">スポット名</h2>
+            <p id="spot-desc">解説テキスト...</p>
+            <button class="btn btn-audio" onclick="playTTS()">🔊 音声ガイドを聞く</button>
+
+            <!-- 下方測驗區塊 -->
+            <div class="quiz-section">
+                <div class="quiz-title" id="quiz-question">問題文...</div>
+                <div class="quiz-options" id="quiz-options"></div>
+                <div id="feedback" class="feedback"></div>
+            </div>
+        </div>
+
+        <!-- 結束畫面 -->
+        <div id="end-screen" class="card hidden" style="text-align: center;">
+            <h2>ツアー終了！</h2>
+            <p>お疲れ様でした！台中の旅はいかがでしたか？ぜひ実際の台中にも遊びに来てくださいね！</p>
+            <button class="btn" onclick="location.reload()">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <script>
+        const spots = [
+            {
+                title: "宮原眼科 (Miyahara)",
+                desc: "かつて眼科医院だった建物をリノベーションした大人気のスイーツ店です。レトロで華やかなインテリアと美味しいアイスクリーム、パイナップルケーキが有名です。",
+                question: "Q. 宮原眼科はもともと何のお手洗い・施設だったでしょう？",
+                options: ["1. 銀行", "2. 病院（眼科）", "3. 駅"],
+                answer: 1
+            },
+            {
+                title: "草悟道 (Calligraphy Greenway)",
+                desc: "緑豊かな遊歩道で、おしゃれなカフェやショップ、美術展などが集まる文化的なエリアです。休日にはマーケットも開催されます。",
+                question: "Q. 草悟道の特徴として正しいものはどれ？",
+                options: ["1. 緑豊かな遊歩道エリア", "2. 台中最古の夜市", "3. 巨大な海鮮市場"],
+                answer: 0
+            },
+            {
+                title: "台中国家歌劇院 (National Taichung Theater)",
+                desc: "日本のアート建築家、伊東豊雄氏によってデザインされた世界的なオペラハウスです。曲線を多用した洞窟のような独特な構造が特徴です。",
+                question: "Q. 台中国家歌劇院をデザインした有名な日本人建築家は誰？",
+                options: ["1. 安藤忠雄", "2. 伊東豊雄", "3. 隈研吾"],
+                answer: 1
+            },
+            {
+                title: "逢甲夜市 (Feng Chia Night Market)",
+                desc: "台湾最大級の夜市の一つで、たくさんのB級グルメやトレンドファッションが集まっています。いつも多くの若者で賑わっています。",
+                question: "Q. 逢甲夜市は主にどんな場所として有名でしょう？",
+                options: ["1. 静かな歴史公園", "2. 台湾最大級の夜市", "3. 伝統的なお寺"],
+                answer: 1
+            },
+            {
+                title: "高美湿地 (Gaomei Wetlands)",
+                desc: "「台湾のウユニ塩湖」とも呼ばれる絶景スポットです。夕暮れ時には風車と美しい夕日が水面に映り込み、幻想的な景色が広がります。",
+                question: "Q. 高美湿地の別名（例え）として有名なのはどれ？",
+                options: ["1. 台湾のウユニ塩湖", "2. 東洋のグランドキャニオン", "3. アジアのグランドオパール"],
+                answer: 0
+            }
+        ];
+
+        let currentSpotIndex = 0;
+        let isAnswered = false;
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('main-card').classList.remove('hidden');
+            showSpot();
+        }
+
+        function showSpot() {
+            speechSynthesis.cancel(); // 切換景點時停止語音
+            isAnswered = false;
+            const spot = spots[currentSpotIndex];
+
+            // 填入景點內容
+            document.getElementById('spot-title').innerText = spot.title;
+            document.getElementById('spot-desc').innerText = spot.desc;
+
+            // 填入測驗內容
+            document.getElementById('quiz-question').innerText = spot.question;
+            document.getElementById('feedback').innerText = '';
+
+            // 渲染選項按鈕
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            spot.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = (e) => checkAnswer(index, e.target);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function playTTS() {
+            speechSynthesis.cancel();
+            const text = spots[currentSpotIndex].desc;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ja-JP';
+            speechSynthesis.speak(utterance);
+        }
+
+        function checkAnswer(selectedIndex, targetBtn) {
+            if (isAnswered) return; // 避免重複點擊
+
+            const spot = spots[currentSpotIndex];
+            const feedback = document.getElementById('feedback');
+            const allBtns = document.querySelectorAll('.option-btn');
+
+            if (selectedIndex === spot.answer) {
+                isAnswered = true;
+                targetBtn.classList.add('btn-correct');
+                feedback.innerText = "⭕ 正解！次のスポットへ移動します...";
+                feedback.className = "feedback correct";
+
+                // 停用所有按鈕，防止重複選擇
+                allBtns.forEach(btn => btn.disabled = true);
+
+                // 1.5 秒後自動進入下一題
+                setTimeout(() => {
+                    nextSpot();
+                }, 1500);
+            } else {
+                targetBtn.classList.add('btn-wrong');
+                feedback.innerText = "❌ 残念！もう一度考えてみてね。";
+                feedback.className = "feedback wrong";
+            }
+        }
+
+        function nextSpot() {
+            currentSpotIndex++;
+            if (currentSpotIndex < spots.length) {
+                showSpot();
+            } else {
+                document.getElementById('main-card').classList.add('hidden');
+                document.getElementById('end-screen').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
